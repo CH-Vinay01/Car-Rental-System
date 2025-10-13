@@ -1,0 +1,92 @@
+package in.chapparapuvinay.carrentalsystem.service;
+
+import in.chapparapuvinay.carrentalsystem.entity.CarEntity;
+import in.chapparapuvinay.carrentalsystem.io.CarRequest;
+import in.chapparapuvinay.carrentalsystem.io.CarResponse;
+import in.chapparapuvinay.carrentalsystem.repository.CarRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
+
+import java.io.IOException;
+import java.util.UUID;
+
+@Service
+public class CarServiceImpl implements CarService {
+
+    // 1. Declare dependencies as final
+    private final S3Client s3Client;
+    private final CarRepository carRepository;
+
+    @Value("${aws.s3.bucketname}")
+    private String bucketName;
+
+    // 2. Add constructor for Spring Dependency Injection
+    public CarServiceImpl(S3Client s3Client, CarRepository carRepository) {
+        this.s3Client = s3Client;
+        this.carRepository = carRepository;
+    }
+
+
+    @Override
+    public String uploadFile(MultipartFile file){
+        String filenameExtension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".")+1);
+        String key = UUID.randomUUID().toString()+"."+filenameExtension;
+        try {
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    // The .acl() call is deprecated in favor of using AWS IAM/Bucket Policies
+                    // If you still need public read, make sure to add the header/policy.
+                    // For modern usage, remove .acl("public-read") and manage permissions with policies.
+                    .contentType(file.getContentType())
+                    .build();
+
+            PutObjectResponse response = s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+
+            if(response.sdkHttpResponse().isSuccessful()){
+                // 3. Corrected URL format for S3 objects
+                return "https://" + bucketName + ".s3." + s3Client.serviceClientConfiguration().region().id() + ".amazonaws.com/" + key;
+            } else {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed");
+            }
+        }catch (IOException ex){
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred during file upload");
+        }
+    }
+
+    @Override
+    public CarResponse addCar(CarRequest request, MultipartFile file) {
+        CarEntity newCarEntity = convertToEntity(request);
+        String imageUrl = uploadFile(file);
+        newCarEntity.setImageUrl(imageUrl);
+        newCarEntity = carRepository.save(newCarEntity);
+        return convertToResponse(newCarEntity);
+    }
+
+    private CarEntity convertToEntity(CarRequest request){
+        return CarEntity.builder()
+                .name(request.getName())
+                .model(request.getModel())
+                .price(request.getPrice())
+                .seats(request.getSeats())
+                .build();
+    }
+
+    private CarResponse convertToResponse(CarEntity entity){
+        return CarResponse.builder()
+                .id(entity.getId())
+                .name(entity.getName())
+                .price(entity.getPrice())
+                .model(entity.getModel())
+                .seats(entity.getSeats())
+                .imageUrl(entity.getImageUrl())
+                .build();
+    }
+}

@@ -11,11 +11,14 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CarServiceImpl implements CarService {
@@ -70,6 +73,42 @@ public class CarServiceImpl implements CarService {
         return convertToResponse(newCarEntity);
     }
 
+    @Override
+    public List<CarResponse> readCars() {
+        List<CarEntity> databaseEntries =  carRepository.findAll();
+        return databaseEntries.stream().map(object -> convertToResponse(object)).collect(Collectors.toList());
+    }
+
+    @Override
+    public CarResponse readCar(String id) {
+        CarEntity existingFood =  carRepository.findById(id).orElseThrow(() -> new RuntimeException("Food not found for the id:"+id));
+        return convertToResponse(existingFood);
+    }
+
+
+    @Override
+    public void deleteCar(String id) {
+        CarResponse response = readCar(id);
+        String imageUrl = response.getImageUrl();
+        String filename = imageUrl.substring(imageUrl.lastIndexOf("/")+1);
+        boolean isFileDelete = deleteFile(filename);
+        if(isFileDelete){
+            carRepository.deleteById(response.getId());
+        }
+
+    }
+
+    @Override
+    public boolean deleteFile(String fileName) {
+        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                .bucket(bucketName)
+                .key(fileName)
+                .build();
+        s3Client.deleteObject(deleteObjectRequest);
+        return true;
+    }
+
+
     private CarEntity convertToEntity(CarRequest request){
         return CarEntity.builder()
                 .name(request.getName())
@@ -89,4 +128,6 @@ public class CarServiceImpl implements CarService {
                 .imageUrl(entity.getImageUrl())
                 .build();
     }
+
+
 }

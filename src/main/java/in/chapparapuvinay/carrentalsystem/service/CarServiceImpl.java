@@ -24,14 +24,12 @@ import java.util.stream.Collectors;
 @Service
 public class CarServiceImpl implements CarService {
 
-    // 1. Declare dependencies as final
     private final S3Client s3Client;
     private final CarRepository carRepository;
 
-    @Value("${aws.s3.bucketname}")
+    @Value("${aws.s3.carsbucket}")
     private String bucketName;
 
-    // 2. Add constructor for Spring Dependency Injection
     public CarServiceImpl(S3Client s3Client, CarRepository carRepository) {
         this.s3Client = s3Client;
         this.carRepository = carRepository;

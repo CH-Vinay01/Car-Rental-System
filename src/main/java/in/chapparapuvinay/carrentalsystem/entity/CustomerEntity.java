@@ -21,7 +21,6 @@ public class CustomerEntity {
     private String password;
     private String dob;
     private String phno;
-    private boolean idDL;
     private String image;
     private String dlURL;
 }

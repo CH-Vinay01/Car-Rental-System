@@ -5,6 +5,7 @@ import in.chapparapuvinay.carrentalsystem.io.CarRequest;
 import in.chapparapuvinay.carrentalsystem.io.CarResponse;
 import in.chapparapuvinay.carrentalsystem.repository.CarRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,16 +46,12 @@ public class CarServiceImpl implements CarService {
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
-                    // The .acl() call is deprecated in favor of using AWS IAM/Bucket Policies
-                    // If you still need public read, make sure to add the header/policy.
-                    // For modern usage, remove .acl("public-read") and manage permissions with policies.
                     .contentType(file.getContentType())
                     .build();
 
             PutObjectResponse response = s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
             if(response.sdkHttpResponse().isSuccessful()){
-                // 3. Corrected URL format for S3 objects
                 return "https://" + bucketName + ".s3." + s3Client.serviceClientConfiguration().region().id() + ".amazonaws.com/" + key;
             } else {
                 throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "File upload failed");
@@ -75,8 +72,11 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public List<CarResponse> readCars() {
-        List<CarEntity> databaseEntries =  carRepository.findAll();
-        return databaseEntries.stream().map(object -> convertToResponse(object)).collect(Collectors.toList());
+        Sort sort = Sort.by(Sort.Direction.ASC, "price");
+        List<CarEntity> databaseEntries = carRepository.findAll(sort);
+        return databaseEntries.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
     @Override

@@ -18,6 +18,7 @@ public class CustomerResponse {
     private String password;
     private String dob;
     private String phno;
+    private String aadharno;
     private String image;
     private String dlURL;
 }

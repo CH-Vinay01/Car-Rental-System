@@ -82,6 +82,16 @@ public class CustomerServiceImpl implements CustomerService{
         }
     }
 
+    @Override
+    public CustomerResponse createNewUser(CustomerRequest request, MultipartFile dlFile, MultipartFile dpFile) {
+        CustomerEntity customerEntity = convertToEntity(request);
+        String dl = uploadDLFile(dlFile);
+        String dp = uploadDPFile(dpFile);
+        customerEntity.setImage(dp);
+        customerEntity.setDlURL(dl);
+        customerEntity = customerRepository.save(customerEntity);
+        return convertToResponse(customerEntity);
+    }
 
 
     private CustomerEntity convertToEntity(CustomerRequest request){
@@ -91,6 +101,7 @@ public class CustomerServiceImpl implements CustomerService{
                 .dob(request.getDob())
                 .email(request.getEmail())
                 .password(request.getPassword())
+                .aadharno(request.getAadharno())
                 .phno(request.getPhno())
                 .build();
     }
@@ -103,6 +114,7 @@ public class CustomerServiceImpl implements CustomerService{
                 .dob(entity.getDob())
                 .email(entity.getEmail())
                 .password(entity.getPassword())
+                .aadharno(entity.getAadharno())
                 .phno(entity.getPhno())
                 .dlURL(entity.getDlURL())
                 .image(entity.getImage())

@@ -1,10 +1,6 @@
 package in.chapparapuvinay.carrentalsystem.service;
 
-import in.chapparapuvinay.carrentalsystem.entity.AdminEntity;
-import in.chapparapuvinay.carrentalsystem.entity.CarEntity;
 import in.chapparapuvinay.carrentalsystem.entity.CustomerEntity;
-import in.chapparapuvinay.carrentalsystem.io.CarRequest;
-import in.chapparapuvinay.carrentalsystem.io.CarResponse;
 import in.chapparapuvinay.carrentalsystem.io.CustomerRequest;
 import in.chapparapuvinay.carrentalsystem.io.CustomerResponse;
 import in.chapparapuvinay.carrentalsystem.repository.CustomerRepository;

@@ -1,9 +1,7 @@
 package in.chapparapuvinay.carrentalsystem.service;
 
 import in.chapparapuvinay.carrentalsystem.entity.AdminEntity;
-import in.chapparapuvinay.carrentalsystem.entity.CarEntity;
 import in.chapparapuvinay.carrentalsystem.repository.AdminRepository;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;

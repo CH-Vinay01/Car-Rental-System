@@ -79,8 +79,8 @@ public class CarServiceImpl implements CarService {
 
     @Override
     public CarResponse readCar(String id) {
-        CarEntity existingFood =  carRepository.findById(id).orElseThrow(() -> new RuntimeException("Food not found for the id:"+id));
-        return convertToResponse(existingFood);
+        CarEntity existingCar =  carRepository.findById(id).orElseThrow(() -> new RuntimeException("Car not found for the id:"+id));
+        return convertToResponse(existingCar);
     }
 
 

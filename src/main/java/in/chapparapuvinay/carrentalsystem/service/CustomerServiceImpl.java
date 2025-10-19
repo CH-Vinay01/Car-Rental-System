@@ -1,5 +1,6 @@
 package in.chapparapuvinay.carrentalsystem.service;
 
+import in.chapparapuvinay.carrentalsystem.entity.AdminEntity;
 import in.chapparapuvinay.carrentalsystem.entity.CarEntity;
 import in.chapparapuvinay.carrentalsystem.entity.CustomerEntity;
 import in.chapparapuvinay.carrentalsystem.io.CarRequest;
@@ -18,6 +19,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -25,9 +27,9 @@ public class CustomerServiceImpl implements CustomerService{
     private final S3Client s3Client;
     private final CustomerRepository customerRepository;
 
-    @Value("{aws.s3.dlbucket}")
+    @Value("${aws.s3.dlbucket}")
     private String dlBucket;
-    @Value("{aws.s3.dpbucket}")
+    @Value("${aws.s3.dpbucket}")
     private String dpBucket;
 
     public CustomerServiceImpl(S3Client s3Client, CustomerRepository customerRepository) {
@@ -93,6 +95,27 @@ public class CustomerServiceImpl implements CustomerService{
         return convertToResponse(customerEntity);
     }
 
+    @Override
+    public boolean verifyUser(String email, String password) {
+        Optional<CustomerEntity> foundCustomerOptional = customerRepository.findByEmail(email);
+        if (foundCustomerOptional.isPresent()) {
+            CustomerEntity foundCustomer = foundCustomerOptional.get();
+            return foundCustomer.getPassword().equals(password);
+        }
+        return false;
+    }
+
+    @Override
+    public CustomerResponse readCustomer(String id) {
+        CustomerEntity existingCustomer =  customerRepository.findById(id).orElseThrow(() -> new RuntimeException("Customer not found for the id:"+id));
+        return convertToResponse(existingCustomer);
+    }
+
+    @Override
+    public String getId(String email) {
+        Optional<CustomerEntity> customerOptional = customerRepository.findByEmail(email);
+        return customerOptional.map(CustomerEntity::getId).orElse(null);
+    }
 
     private CustomerEntity convertToEntity(CustomerRequest request){
         return CustomerEntity.builder()

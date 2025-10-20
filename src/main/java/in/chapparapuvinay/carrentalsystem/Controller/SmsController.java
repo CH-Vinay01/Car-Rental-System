@@ -17,10 +17,17 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/sms")
 public class SmsController {
+    @Autowired
+    private final SmsService smsService;
 
     @Autowired
-    private SmsService smsService;
-    private CustomerService service;
+    private final CustomerService service;
+
+    @Autowired
+    public SmsController(SmsService smsService, CustomerService service) {
+        this.smsService = smsService;
+        this.service = service;
+    }
 
     @PostMapping("/send")
     public ResponseEntity<String> sendOtp(@RequestBody SmsRequest smsRequest) {
@@ -59,44 +66,54 @@ public class SmsController {
                     .body("Invalid or expired OTP.");
         }
     }
+    @PostMapping("/verify/login")
+    public ResponseEntity<Map<String, Object>> verifySmsOtp(@RequestBody SmsVerifyRequest verifyRequest) {
+        Map<String, Object> response = new HashMap<>();
 
-//    @PostMapping("/verify/login")
-//    public ResponseEntity<Map<String, Object>> verifySmsOtp(@RequestBody SmsVerifyRequest verifyRequest) {
-//        // Use a single map for the response body
-//        Map<String, Object> response = new HashMap<>();
-//
-//        // --- Validation Checks ---
-//        if (verifyRequest.getPhoneNumber() == null || verifyRequest.getPhoneNumber().trim().isEmpty()) {
-//            response.put("success", false);
-//            response.put("message", "Phone number is required.");
-//            // Return the map as the body of the bad request
-//            return ResponseEntity.badRequest().body(response);
-//        }
-//
-//        if (verifyRequest.getOtp() == null || verifyRequest.getOtp().trim().isEmpty()) {
-//            response.put("success", false);
-//            response.put("message", "OTP is required.");
-//            // Return the map as the body of the bad request
-//            return ResponseEntity.badRequest().body(response);
-//        }
-//
-//        // --- Business Logic ---
-//        boolean isOtpValid = smsService.verifyOtp(
-//                verifyRequest.getPhoneNumber(),
-//                verifyRequest.getOtp()
-//        );
-//
-//        // --- Response Generation ---
-//        if (isOtpValid) {
-//            response.put("success", true);
-//            response.put("message", "Phone number verified successfully.");
-//            // Return the map as the body of the OK response
-//            return ResponseEntity.ok(response);
-//        } else {
-//            response.put("success", false);
-//            response.put("message", "Invalid or expired OTP.");
-//            // Return the map as the body of the bad request with a specific status
-//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-//        }
-//    }
+        // --- 1. Validation (No changes here) ---
+        if (verifyRequest.getPhoneNumber() == null || verifyRequest.getPhoneNumber().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Phone number is required.");
+            response.put("customerId", null);
+            return ResponseEntity.badRequest().body(response);
+        }
+        if (verifyRequest.getOtp() == null || verifyRequest.getOtp().trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "OTP is required.");
+            response.put("customerId", null);
+            return ResponseEntity.badRequest().body(response);
+        }
+
+        // --- 2. Business Logic ---
+        boolean isOtpValid = smsService.verifyOtp(
+                verifyRequest.getPhoneNumber(),
+                verifyRequest.getOtp()
+        );
+
+        // --- 3. Response Generation (Updated Logic) ---
+        if (isOtpValid) {
+            String customerId = service.getIdByPhoneNo(verifyRequest.getPhoneNumber());
+
+            // **CRITICAL CHECK ADDED HERE**
+            // Ensure customerId is not null or blank before confirming success.
+            if (customerId != null && !customerId.trim().isEmpty()) {
+                // Happy path: OTP is valid AND we found the user.
+                response.put("success", true);
+                response.put("message", "Phone number verified successfully.");
+                response.put("customerId", customerId);
+                return ResponseEntity.ok(response);
+            } else {
+                response.put("success", false);
+                response.put("message", "Login failed. Please contact support.");
+                response.put("customerId", null);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            }
+        } else {
+            // Invalid OTP path (No changes here)
+            response.put("success", false);
+            response.put("message", "Invalid or expired OTP.");
+            response.put("customerId", null);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+    }
 }

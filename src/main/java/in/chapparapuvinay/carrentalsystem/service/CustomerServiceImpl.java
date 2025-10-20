@@ -113,6 +113,21 @@ public class CustomerServiceImpl implements CustomerService{
         return customerOptional.map(CustomerEntity::getId).orElse(null);
     }
 
+    public String getIdByPhoneNo(String phoneNo) {
+        Optional<CustomerEntity> customerOptional = customerRepository.findByPhno(phoneNo);
+
+        // Check if a customer was found
+        if (customerOptional.isPresent()) {
+            // If found, get the customer object
+            CustomerEntity customer = customerOptional.get();
+            // Return the ID, converted to a String
+            return customer.getId().toString();
+        } else {
+            // If no customer was found, throw a "Not Found" exception
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with phone number " + phoneNo + " not found.");
+        }
+    }
+
     private CustomerEntity convertToEntity(CustomerRequest request){
         return CustomerEntity.builder()
                 .firstName(request.getFirstName())

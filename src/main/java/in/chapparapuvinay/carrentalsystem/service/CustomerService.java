@@ -12,4 +12,5 @@ public interface CustomerService {
     boolean verifyUser(String email, String password);
     CustomerResponse readCustomer(String id);
     String getId(String email);
+    public String getIdByPhoneNo(String phoneNo);
 }
